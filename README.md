@@ -34,6 +34,3 @@ Ensure you have a `gatsby-config.js` file in the root of your website and set th
   ],
 }
 ```
-
-## Getting Started
-- See the tutorial here: [Using Gatsby with Agility CMS](https://dev.to/joelvarty/using-gatsby-with-agility-cms-ojm)
