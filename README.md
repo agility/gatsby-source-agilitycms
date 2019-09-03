@@ -1,5 +1,5 @@
 # GatsbyJS Source Plugin for Agility CMS
-This is the offical Agility CMS source plugin for GatsbyJS.
+This is the offical [Agility CMS](https://agilitycms.com) source plugin for GatsbyJS.
 
 ## Example
 For an example on how this can be used in a website see [Agility CMS GatsbyJS Starter](https://github.com/agility/agility-gatsby-starter).
