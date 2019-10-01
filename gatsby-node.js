@@ -8,7 +8,8 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
     
     const aglClient = agility.getApi({
         guid: configOptions.guid,
-        apiKey: configOptions.apiKey
+        apiKey: configOptions.apiKey,
+        isPreview: configOptions.isPreview
     })
 
     const sharedContentReferenceNames = configOptions.sharedContent;

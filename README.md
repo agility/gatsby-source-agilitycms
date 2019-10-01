@@ -25,6 +25,7 @@ Ensure you have a `gatsby-config.js` file in the root of your website and set th
       options: {
         guid: "046a1a87", //your Agility Content Fetch API Guid
         apiKey: "defaultlive.2b7f3a91559d794bedb688358be5e13af2b1e3ae8cd39e8ed2433bbef5d8d6ac", //your Agility Content Fetch API Key
+        isPreview: false, //set this to true if you are using your preview API Key
         sharedContent: ['posts', 'globalheader'], //a list of reference names you want to include in your GraphQL store
         languages: [ 'en-us' ], //the languages you want to include
         channels: [ 'website' ], //the channels you want to include
