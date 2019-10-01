@@ -1,5 +1,5 @@
 # GatsbyJS Source Plugin for Agility CMS
-This is the offical Agility CMS source plugin for GatsbyJS.
+This is the offical [Agility CMS](https://agilitycms.com) source plugin for GatsbyJS.
 
 ## Example
 For an example on how this can be used in a website see [Agility CMS GatsbyJS Starter](https://github.com/agility/agility-gatsby-starter).
@@ -35,9 +35,3 @@ Ensure you have a `gatsby-config.js` file in the root of your website and set th
   ],
 }
 ```
-
-## TODOs
-- Figure out a better way to handle the `fields` property conflict when inserting into GraphQL
-- Walkthrough of how it works
-- Add contentLinkDepth to the JS SDK so it resolves more related content automatically
-- Tutorials
