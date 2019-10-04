@@ -17,20 +17,53 @@ Ensure you have a `gatsby-config.js` file in the root of your website and set th
  *
  * See: https://www.gatsbyjs.org/docs/gatsby-config/
  */
-
- module.exports = {
+module.exports = {
+  siteMetadata: {
+    title: "Agility CMS Gatsby Starter",
+  },
   plugins: [
     {
-      resolve: "@agility/gatsby-source-agilitycms", //the name of the plugin
+      // The name of the plugin
+      resolve: "@agility/gatsby-source-agilitycms", 
       options: {
-        guid: "046a1a87", //your Agility Content Fetch API Guid
-        apiKey: "defaultlive.2b7f3a91559d794bedb688358be5e13af2b1e3ae8cd39e8ed2433bbef5d8d6ac", //your Agility Content Fetch API Key
-        isPreview: false, //set this to true if you are using your preview API Key
-        sharedContent: ['posts', 'globalheader'], //a list of reference names you want to include in your GraphQL store
-        languages: [ 'en-us' ], //the languages you want to include
-        channels: [ 'website' ], //the channels you want to include
-        defaultPageTemplate: './src/templates/AgilityPage.js', //the page template that will be used to render Agility CMS pages
-        indexPage: '/home' //If you want an Agility CMS page to be your home page (i.e. '/home' to be used as '/'), set the page path here
+        // Your Agility Content Fetch API Guid
+        guid: '046a1a87', 
+        // Your Agility Content Fetch API Key
+        apiKey: 'defaultlive.2b7f3a91559d794bedb688358be5e13af2b1e3ae8cd39e8ed2433bbef5d8d6ac', 
+        // Set this to true if you are using the preview API Key
+        isPreview: agilityConfig.isPreview, 
+        // A list of reference names you want to include in your GraphQL store
+        sharedContent: ["posts", "globalheader"], 
+        // Your list of languages
+        languages: [{
+            // The name of the language code
+            name: "English",
+            // The actual language code set in Agility CMS
+            code: "en-us", 
+            // The name to be used in the URL path that represents the current language
+            path: "en", 
+            // The path to the Agility CMS page that you want to use as your root/home page
+            homePagePath: "/home" 
+          },
+          {
+            // The name of the language code
+            name: "French",
+            // The actual language code set in Agility CMS
+            code: "fr-ca", 
+            // The name to be used in the URL path that represents the current language
+            path: "fr", 
+            // The path to the Agility CMS page that you want to use as your root/home page
+            homePagePath: "/chateau"       
+          }
+        ], 
+        // The channels you want to include
+        channels: [{
+          // The reference name for the website channel as it is defined in Agility CMS
+          referenceName: "website"
+        }], 
+        // The master page template that will be used to render Agility CMS pages
+        masterPageTemplate: "./src/templates/AgilityPage.js", 
+      },
     },
   ],
 }
