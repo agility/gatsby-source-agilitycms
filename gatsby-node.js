@@ -202,7 +202,6 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
         allAgilitySitemapNode {
           nodes {
             name
-            contentID
             pageID
             path
             title
