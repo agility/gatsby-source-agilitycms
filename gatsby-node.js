@@ -150,6 +150,12 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
           })
 
           // Now create a node for each sitemap entry as well
+
+          // If we don't have a contentID property, add-in a null value - this allows us to safely query for this property later...
+          if(!sitemapNode.contentID) {
+            sitemapNode.contentID = null;
+          }
+
           const sitemapNodeContent = JSON.stringify(sitemapNode);
           const sitemapNodeMeta = {
               id: createNodeId(`sitemap-${channel}-${sitemapNode.path}-${languageCode}`),
