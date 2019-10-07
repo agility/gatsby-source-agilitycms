@@ -323,7 +323,7 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
               createPageArgs.path = `/`
             }
 
-            createPage(createPageArgs);
+            createPage(JSON.stringify(createPageArgs));
 
             if(configOptions.debug) {
               logInfo(createPageArgs);
@@ -342,7 +342,7 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
             logSuccess(`Redirect from ${pagePath} to ${createPageArgs.path} created`);
 
         } else {
-          createPage(createPageArgs);
+          createPage(JSON.stringify(createPageArgs));
 
           if(configOptions.debug) {
             logInfo(createPageArgs);
