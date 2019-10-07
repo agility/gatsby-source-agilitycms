@@ -1,9 +1,14 @@
 var agility = require('@agility/content-fetch')
 var path = require('path')
 
-exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, configOptions) => {
+exports.sourceNodes = async ({ actions, createNodeId, createContentDigest, getNode, getNodes, store, cache, reporter, webhookBody }, configOptions) => {
     logInfo(`Source Nodes Started...`);
     
+    if(webhookBody && Object.keys(webhookBody).length > 0) {
+      logSuccess(`Webhook being processed...`);
+      logSuccess(JSON.stringify(webhookBody));
+    }
+
     const { createNode } = actions
     // Create nodes here, generally by downloading data
     // from a remote API.
@@ -20,6 +25,7 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
 
     // Source Shared Content ------------------------------------------------------------------------------
     const sourceSharedContent = async ({ aglClient, sharedContentReferenceNames, language }) => {
+      
       const languageCode = language.code;
       await asyncForEach(sharedContentReferenceNames, async (refName) => {
 
@@ -42,7 +48,7 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
             const nodeContent = JSON.stringify(ci);
             
             if(configOptions.debug) {
-              logInfo(nodeContent);
+              logDebug(nodeContent);
             }
 
             const nodeMeta = {
@@ -120,7 +126,7 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
           const nodeContent = JSON.stringify(page);
 
           if(configOptions.debug) {
-            logInfo(nodeContent);
+            logDebug(nodeContent);
           }
 
           const nodeMeta = {
@@ -145,7 +151,7 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
               mod.languageCode = languageCode;
               const moduleContent = JSON.stringify(mod);
               if(configOptions.debug) {
-                logInfo(moduleContent);
+                logDebug(moduleContent);
               }
               const moduleMeta = {
                   id: createNodeId(`${mod.item.properties.referenceName}-${languageCode}`),
@@ -173,7 +179,7 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
           const sitemapNodeContent = JSON.stringify(sitemapNode);
 
           if(configOptions.debug) {
-            logInfo(sitemapNodeContent);
+            logDebug(sitemapNodeContent);
           }
 
           const sitemapNodeMeta = {
@@ -323,10 +329,10 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
               createPageArgs.path = `/`
             }
 
-            createPage(JSON.stringify(createPageArgs));
+            createPage(createPageArgs);
 
             if(configOptions.debug) {
-              logInfo(createPageArgs);
+              logDebug(JSON.stringify(createPageArgs));
             }
 
             logSuccess(`Index Page ${createPageArgs.path} (${sitemapNode.languageCode}) created.`);
@@ -342,10 +348,10 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
             logSuccess(`Redirect from ${pagePath} to ${createPageArgs.path} created`);
 
         } else {
-          createPage(JSON.stringify(createPageArgs));
+          createPage(createPageArgs);
 
           if(configOptions.debug) {
-            logInfo(createPageArgs);
+            logDebug(JSON.stringify(createPageArgs));
           }
 
           logSuccess(`Page ${createPageArgs.path} (${sitemapNode.languageCode}) created.`);
@@ -395,6 +401,12 @@ function logError(message) {
 function logInfo(message) {
   message = `AgilityCMS => ${message}`;
   console.log(message);
+}
+
+function logDebug(message) {
+  console.log('#######################################################################');
+  message = `AgilityCMS (debug) => ${message}`;
+  console.log('"\x1b[35m%s\x1b[0m', message);
 }
 
 
