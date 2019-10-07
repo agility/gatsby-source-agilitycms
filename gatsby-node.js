@@ -2,6 +2,8 @@ var agility = require('@agility/content-fetch')
 var path = require('path')
 
 exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, configOptions) => {
+    logInfo(`Source Nodes Started...`);
+    
     const { createNode } = actions
     // Create nodes here, generally by downloading data
     // from a remote API.
@@ -39,6 +41,10 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
 
             const nodeContent = JSON.stringify(ci);
             
+            if(configOptions.debug) {
+              logInfo(nodeContent);
+            }
+
             const nodeMeta = {
                 id: createNodeId(`${refName}-${ci.contentID}-${languageCode}`),
                 parent: null,
@@ -112,6 +118,11 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
           page.zones = pageZones;
 
           const nodeContent = JSON.stringify(page);
+
+          if(configOptions.debug) {
+            logInfo(nodeContent);
+          }
+
           const nodeMeta = {
               id: createNodeId(`page-${channelName}-${page.pageID}-${languageCode}`),
               parent: null,
@@ -133,6 +144,9 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
             await asyncForEach(modules, async (mod) => {
               mod.languageCode = languageCode;
               const moduleContent = JSON.stringify(mod);
+              if(configOptions.debug) {
+                logInfo(moduleContent);
+              }
               const moduleMeta = {
                   id: createNodeId(`${mod.item.properties.referenceName}-${languageCode}`),
                   parent: null,
@@ -157,6 +171,11 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
           }
 
           const sitemapNodeContent = JSON.stringify(sitemapNode);
+
+          if(configOptions.debug) {
+            logInfo(sitemapNodeContent);
+          }
+
           const sitemapNodeMeta = {
               id: createNodeId(`sitemap-${channel}-${sitemapNode.path}-${languageCode}`),
               parent: null,
@@ -194,6 +213,9 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest }, con
 exports.createPages = async ({ graphql, actions }, configOptions) => {
     const { createPage } = actions;
     const { createRedirect } = actions;
+    const { createPageDependency } = actions;
+
+    logInfo(`Create Pages Started...`);
 
     const aglClient = agility.getApi({
         guid: configOptions.guid,
@@ -302,6 +324,11 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
             }
 
             createPage(createPageArgs);
+
+            if(configOptions.debug) {
+              logInfo(createPageArgs);
+            }
+
             logSuccess(`Index Page ${createPageArgs.path} (${sitemapNode.languageCode}) created.`);
 
             //create a redirect from the actual page to the root page
@@ -316,6 +343,11 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
 
         } else {
           createPage(createPageArgs);
+
+          if(configOptions.debug) {
+            logInfo(createPageArgs);
+          }
+
           logSuccess(`Page ${createPageArgs.path} (${sitemapNode.languageCode}) created.`);
         }
 
@@ -364,6 +396,7 @@ function logInfo(message) {
   message = `AgilityCMS => ${message}`;
   console.log(message);
 }
+
 
 
 
