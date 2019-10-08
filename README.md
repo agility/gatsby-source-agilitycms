@@ -27,7 +27,7 @@ module.exports = {
       resolve: "@agility/gatsby-source-agilitycms", 
       options: {
         // If you are debugging content from Agility CMS, you can set this to `true` 
-        debug: true,
+        debug: false,
         // Your Agility Content Fetch API Guid
         guid: '046a1a87', 
         // Your Agility Content Fetch API Key

@@ -16,7 +16,8 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest, getNo
     const aglClient = agility.getApi({
         guid: configOptions.guid,
         apiKey: configOptions.apiKey,
-        isPreview: configOptions.isPreview
+        isPreview: configOptions.isPreview,
+        debug: configOptions.debug
     })
 
     const sharedContentReferenceNames = configOptions.sharedContent;
@@ -171,9 +172,9 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest, getNo
 
           // Now create a node for each sitemap entry as well
 
-          // If we don't have a contentID property, add-in a null value - this allows us to safely query for this property later...
+          // If we don't have a contentID property, add-in a negative value - this allows us to safely query for this property later...
           if(!sitemapNode.contentID) {
-            sitemapNode.contentID = null;
+            sitemapNode.contentID = -1;
           }
 
           const sitemapNodeContent = JSON.stringify(sitemapNode);
@@ -226,7 +227,8 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
     const aglClient = agility.getApi({
         guid: configOptions.guid,
         apiKey: configOptions.apiKey,
-        isPreview: configOptions.isPreview
+        isPreview: configOptions.isPreview,
+        debug: configOptions.debug
     })
 
     const pageTemplate = path.resolve(configOptions.masterPageTemplate);
