@@ -264,7 +264,7 @@ exports.createPages = async ({ graphql, actions }, configOptions) => {
 
         // If this is a dynamic page, grab the dynamic item and pass-it to the context
         let dynamicPageItem = null;
-        if(sitemapNode.contentID)  {
+        if(sitemapNode.contentID && sitemapNode.contentID > 0)  {
             dynamicPageItem = await aglClient.getContentItem({ contentID: sitemapNode.contentID, languageCode: sitemapNode.languageCode });
         }
 
