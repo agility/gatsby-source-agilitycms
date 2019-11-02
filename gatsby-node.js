@@ -17,7 +17,8 @@ exports.sourceNodes = async ({ actions, createNodeId, createContentDigest, getNo
         guid: configOptions.guid,
         apiKey: configOptions.apiKey,
         isPreview: configOptions.isPreview,
-        debug: configOptions.debug
+        debug: configOptions.debug,
+        baseUrl: configOptions.baseUrl
     })
 
     const sharedContentReferenceNames = configOptions.sharedContent;
