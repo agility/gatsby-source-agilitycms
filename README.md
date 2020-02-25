@@ -1,6 +1,8 @@
 # GatsbyJS Source Plugin for Agility CMS
 This is the offical [Agility CMS](https://agilitycms.com) source plugin for GatsbyJS.
 
+This uses the [Agility CMS Sync SDK](https://github.com/agility/agility-sync-sdk) so that builds will only refresh nodes/content that has changed since the last build was run.
+
 ## Example
 For an example on how this can be used in a website see [Agility CMS GatsbyJS Starter](https://github.com/agility/agility-gatsby-starter).
 
