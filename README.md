@@ -36,8 +36,6 @@ module.exports = {
         apiKey: 'defaultlive.2b7f3a91559d794bedb688358be5e13af2b1e3ae8cd39e8ed2433bbef5d8d6ac', 
         // Set this to true if you are using the preview API Key
         isPreview: agilityConfig.isPreview, 
-        // A list of reference names you want to include in your GraphQL store
-        sharedContent: ["posts", "globalheader"], 
         // Your list of languages
         languages: [{
             // The name of the language code
@@ -45,9 +43,7 @@ module.exports = {
             // The actual language code set in Agility CMS
             code: "en-us", 
             // The name to be used in the URL path that represents the current language
-            path: "en", 
-            // The path to the Agility CMS page that you want to use as your root/home page
-            homePagePath: "/home" 
+            path: "en"
           },
           {
             // The name of the language code
@@ -55,9 +51,7 @@ module.exports = {
             // The actual language code set in Agility CMS
             code: "fr-ca", 
             // The name to be used in the URL path that represents the current language
-            path: "fr", 
-            // The path to the Agility CMS page that you want to use as your root/home page
-            homePagePath: "/chateau"       
+            path: "fr"     
           }
         ], 
         // The channels you want to include

@@ -43,44 +43,9 @@ exports.sourceNodes = async (args, configOptions) => {
 
   logInfo(`Creating sitemap nodes...`);
   
-
-  let channelName = channelsRefs[0];
-
-  let languageCode = languageCodes[0];
-
-  //get the sitemap from the local store
-	let sitemap = await syncClient.store.getSitemap({ channelName, languageCode });
-  
-	if (!sitemap) {
-		throw new Error(`Could not get the sitemap node(s) for channel ${channelName} in language ${languageCode}`);
-	} 
-
-  //create the sitemap nodes... 
   //TODO: Do we need to do this every time?
-  for (const pagePath in sitemap) {
-
-    const sitemapNode = sitemap[pagePath];
-
-    const nodeID = createNodeId(`sitemap-${sitemapNode.pageID}-${sitemapNode.contentID}`);
-
-    const nodeMeta = {
-      id: nodeID,
-      parent: null,
-      children: [],
-      languageCode: languageCode,
-      pagePath: pagePath,
-      internal: {
-        type: "agilitySitemapNode",
-        content: "",
-        contentDigest: createContentDigest(sitemapNode)
-      }
-    }
-
-    const nodeToCreate = Object.assign({}, sitemapNode, nodeMeta);
-
-    await createNode(nodeToCreate);
-
-  }
+  await createSitemapSourceNodes({ createNode, createNodeId, createContentDigest, channelsRefs, languageCodes, syncClient })
+  
 	logInfo(`Source Nodes Completed.`);
 }
 
@@ -90,9 +55,10 @@ exports.createPages = async (args, configOptions) => {
 	const { graphql, actions, getNode, createNodeId, createContentDigest, store } = args;
 	const { createPage, deletePage, createNode, createRedirect, createPageDependency } = actions;
 
-  const languageCodes = resolveLanguageCodes(configOptions.languages);
+  const languages = configOptions.languages;
   const channelsRefs = resolveChannelRefNames(configOptions.channels);
   const debug = configOptions.debug;
+  const isMultiLanguage = languages.length > 1;
 
 	logInfo(`Create Pages Started...`);
 
@@ -124,29 +90,8 @@ exports.createPages = async (args, configOptions) => {
     }
   });
 
-	let languageCode = languageCodes[0];
-  let channelName = channelsRefs[0];
+  await createPagesInEachLanguage({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage })
   
-  //get the sitemap
-	let sitemap = await syncClient.store.getSitemap({ channelName, languageCode });
-
-	if (sitemap == null) {
-		logWarning(`Could not get the sitemap node(s) for channel ${channelName} in language ${languageCode}`)
-		return;
-	}
-
-
-  //loop all nodes we returned...
-  let isHomePage = true; //set flag for homepage
-  let pageCount = 0;
-	for (const pagePath in sitemap) {
-		const sitemapNode = sitemap[pagePath];
-		await createAgilityPage({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
-    isHomePage = false; //clear flag, homepage created...
-    pageCount++;
-  }
-  
-  logSuccess(`${pageCount} pages created from ${channelName} in ${languageCode}`)
 }
 
 //CREATE RESOLVERS *******************************************************************************************
@@ -244,6 +189,49 @@ exports.createResolvers = (args) => {
 	createResolvers(resolvers)
 }
 
+const createSitemapSourceNodes = async ({ createNode, createNodeId, createContentDigest, channelsRefs, languageCodes , syncClient }) => {
+
+  //only support one channel for now (first channel)
+  let channelName = channelsRefs[0];
+
+  await asyncForEach(languageCodes, async(languageCode) => {
+
+    //get the sitemap from the local store
+    let sitemap = await syncClient.store.getSitemap({ channelName, languageCode });
+    
+    if (!sitemap) {
+      throw new Error(`Could not get the sitemap node(s) for channel ${channelName} in language ${languageCode}`);
+    } 
+  
+    //create the sitemap nodes... 
+    for (const pagePath in sitemap) {
+  
+      const sitemapNode = sitemap[pagePath];
+    
+      const nodeID = createNodeId(`sitemap-${sitemapNode.pageID}-${sitemapNode.contentID}`);
+  
+      const nodeMeta = {
+        id: nodeID,
+        parent: null,
+        children: [],
+        languageCode: languageCode,
+        pagePath: pagePath,
+        internal: {
+          type: "agilitySitemapNode",
+          content: "",
+          contentDigest: createContentDigest(sitemapNode)
+        }
+      }
+  
+      const nodeToCreate = Object.assign({}, sitemapNode, nodeMeta);
+  
+      await createNode(nodeToCreate);
+  
+    }
+  })
+ 
+}
+
 /**
 	 * Touch the previous nodes so that they don't get erased in this build
 */
@@ -272,26 +260,9 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
  * @param {*} isHomePage
  * @returns
  */
-const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
+const createAgilityPage = async ({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
 
-  //skip folders - nothing to generate here
-  if (sitemapNode.isFolder) return;
-
-  //special case for homepage
-  if (isHomePage) {
-
-    //create a redirect from sitemapNode.path to /
-    await createRedirect({
-      fromPath: sitemapNode.path,
-      toPath: "/",
-      isPermantent: true,
-      redirectInBrowser: true
-    });
-
-    pagePath = "/";
-  }
-
-
+  //create a regular page
   let createPageArgs = {
     path: pagePath,
     component: pageTemplate,
@@ -320,8 +291,76 @@ const resolveChannelRefNames = (channels) => {
   })
 }
 
+const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage }) => {
+  
+  //TODO: handle mulitple channels, just use the first one for now
+  let channelName = channelsRefs[0];
+  
+  //set flag for default homepage '/' - it will be the first sitemap node in the first language
+  let isHomePage = true; 
+
+  //loop through each language
+  await asyncForEach(languages, async(language) => {
+
+    const languageCode = language.code;
+
+    //get the sitemap
+    let sitemap = await syncClient.store.getSitemap({ channelName, languageCode });
+
+    if (sitemap == null) {
+      logWarning(`Could not get the sitemap node(s) for channel ${channelName} in language ${languageCode}`)
+      return;
+    }
+
+
+    //loop all nodes we returned...
+    let pageCount = 0;
+    for (let pagePath in sitemap) {
+      const sitemapNode = sitemap[pagePath];
+      
+      //skip folders
+      if (sitemapNode.isFolder) continue;
+
+      if(isHomePage) {
+        //create a redirect from sitemapNode.path to /
+        const fromPath = resolvePagePath(sitemapNode.path, language, isMultiLanguage);
+        await createRedirect({
+          fromPath: fromPath,
+          toPath: "/",
+          isPermantent: true,
+          redirectInBrowser: true
+        });
+        
+        //also need to create the actual '/' root page - if you don't you'll get a 404 on page-data.json requests to '/home'
+        await createAgilityPage({ createPage, pagePath: '/', sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
+
+        logInfo(`Requests to ${fromPath} will redirect to '/'`)
+      }
+
+      isHomePage = false; //clear flag, homepage created...
+      pagePath = resolvePagePath(pagePath, languageCode);
+      await createAgilityPage({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
+      
+      logInfo(`${pagePath} page created.`)
+      pageCount++;
+    }
+    
+    logSuccess(`${pageCount} pages created from ${channelName} in ${languageCode}`)
+  })
+
+}
+
+
 const resolveLanguageCodes = (languages) => {
   return languages.map((l) => {
     return l.code;
   })
+}
+
+const resolvePagePath = (path, language, isMultiLanguage) => {
+  if(isMultiLanguage) {
+    return `/${language.path}${path}`;
+  } else {
+    return `${path}`;
+  }
 }
