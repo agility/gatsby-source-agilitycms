@@ -7,21 +7,15 @@ const saveItem = async ({ options, item, itemType, languageCode, itemID }) => {
     const nodeID = getNodeID({ options, itemType, languageCode, itemID });
     let typeName = `agility${itemType}`;
 
-    const jsonContent = JSON.stringify(item);
-    const nodeMeta = {
-        id: nodeID,
-        parent: null,
-        children: [],
-        internal: {
-            type: typeName,
-            content: jsonContent,
-            contentDigest: options.createContentDigest(item)
-        }
-    }
-
     let nodeObj = {
         languageCode: languageCode,
         itemID: itemID
+    }
+
+    //rename 'fields' to 'customFields', because 'fields' is a reserved name
+    if(item.fields) {
+        item.customFields = item.fields;
+        delete item.fields;
     }
 
     switch (itemType) {
@@ -40,15 +34,24 @@ const saveItem = async ({ options, item, itemType, languageCode, itemID }) => {
             break;
         }
         default: {
-            //a content list...
-            item.agilityFields = item.fields;
-            delete item.fields;
-
+            //a content 'list'...
             item.languageCode = languageCode;
             item.itemID = itemID;
             nodeObj = item;
         }
 
+    }
+
+    const jsonContent = JSON.stringify(item);
+    const nodeMeta = {
+        id: nodeID,
+        parent: null,
+        children: [],
+        internal: {
+            type: typeName,
+            content: jsonContent,
+            contentDigest: options.createContentDigest(item)
+        }
     }
 
     const nodeToCreate = Object.assign({}, nodeObj, nodeMeta);

@@ -118,13 +118,13 @@ exports.createResolvers = (args) => {
 		//expand the item if we have to...
 		if (depth > 0) {
 
-			for (const fieldName in contentItem.fields) {
-				const fieldValue = contentItem.fields[fieldName];
+			for (const fieldName in contentItem.customFields) {
+				const fieldValue = contentItem.customFields[fieldName];
 
 				if (fieldValue.contentid > 0) {
 					//single linked item
 					const childItem = await getContentItem({ contentID: fieldValue.contentid, languageCode, context, depth: depth - 1 });
-					if (childItem != null) contentItem.fields[fieldName] = childItem;
+					if (childItem != null) contentItem.customFields[fieldName] = childItem;
 				} else if (fieldValue.sortids && fieldValue.sortids.split) {
 					//multi linked item
 					const sortIDAry = fieldValue.sortids.split(',');
@@ -134,7 +134,7 @@ exports.createResolvers = (args) => {
 						if (childItem != null) childItems.push(childItem);
 					}
 
-					contentItem.fields[fieldName] = childItems;
+					contentItem.customFields[fieldName] = childItems;
 
 				}
 			}
@@ -153,7 +153,6 @@ exports.createResolvers = (args) => {
 				resolve: async (source, args, context, info) => {
 
 					const languageCode = source.languageCode;
-					const pageID = source.itemID;
 
 					const pageJSON = source.internal.content;
 					const pageItem = JSON.parse(pageJSON);
