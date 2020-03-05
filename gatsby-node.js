@@ -90,8 +90,12 @@ exports.createPages = async (args, configOptions) => {
     }
   });
 
+
   await createPagesInEachLanguage({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage })
   
+  //HACK: create a dummy page for `gatsby develop` redirects on the client-side for dynamic preview urls
+  await createClientRedirectPageForPreviewNode({ createPage });
+
 }
 
 //CREATE RESOLVERS *******************************************************************************************
@@ -283,6 +287,68 @@ const createAgilityPage = async ({ createPage, pagePath, sitemapNode, isHomePage
 
 }
 
+//i.e. `{ '12': { ..pageObject } }`
+let dynamicPageNodes = {};
+
+//i.e. `{ '/posts/posts-dynamic': { '15':'/posts/some-postitle', '16':'/posts/someother-post'  } }`
+let dynamicPagePreviewRedirects = {};
+
+const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapNode, createRedirect, languageCode, syncClient }) => {
+
+  //TODO: Make this work with mult-language sites
+  let page = null;
+
+  //if we don't have this dynamic page node yet, get it, and create a dummy page for it (to handle client-side redirects)
+  if(!dynamicPageNodes[sitemapNode.pageID]) {
+
+    //get the dynamic page node so we can figure out what the dynamic page's name is
+    page = await syncClient.store.getPage({ 
+      pageID: sitemapNode.pageID,
+      languageCode: languageCode
+    });
+
+    //save this for later
+    dynamicPageNodes[sitemapNode.pageID] = page;
+
+  } else {
+    //get from memory
+    page = dynamicPageNodes[sitemapNode.pageID];
+    previewDummyPageCreated = true;
+  }
+
+   //i.e. `/posts/some-post-title`
+   const pagePath = sitemapNode.path;
+
+   //strip the dynamic formula path -> `/posts`
+   const parentPath = pagePath.substring(0, pagePath.lastIndexOf('/'));
+
+   //i.e. `posts-dynamic`
+   const dynamicNodeSlug = page.name;
+
+   //i.e. `/posts/posts-dynamic`
+   const dynamicPageNodePath = `${parentPath}/${dynamicNodeSlug}`;
+
+   //build the preview url -> i.e. `/posts/posts-dynamic?ContentID=12`
+   const previewUrl = `${dynamicPageNodePath}?ContentID=${sitemapNode.contentID}`;
+  
+   //redirect `/posts/posts-dynamic?ContentID` -> `/posts/some-post-title`
+   await createRedirect({
+      fromPath: previewUrl,
+      toPath: pagePath,
+      isPermanent: false,
+      force: true //for netlify
+    });
+
+    logInfo(`${previewUrl} -> ${pagePath} preview redirect created.`);
+
+    //HACK: save a list of all our preview redirects so we can create a dummy client-side page to handle each one in `gatsby develop`
+    if(!dynamicPagePreviewRedirects[dynamicPageNodePath]) {
+      dynamicPagePreviewRedirects[dynamicPageNodePath] = {};
+    }
+    //i.e. `{ '/posts/posts-dynamic': { '15':'/posts/some-postitle', '16':'/posts/someother-post'  } }`
+    dynamicPagePreviewRedirects[dynamicPageNodePath][sitemapNode.contentID] = pagePath;
+}
+
 
 const resolveChannelRefNames = (channels) => {
   return channels.map((c) => {
@@ -326,7 +392,7 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
         await createRedirect({
           fromPath: fromPath,
           toPath: "/",
-          isPermantent: true,
+          isPermanent: true,
           redirectInBrowser: true
         });
         
@@ -340,6 +406,11 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
       pagePath = resolvePagePath(pagePath, languageCode);
       await createAgilityPage({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
       
+      //if this is a dynamic page item, create a redirect for preview i.e. `~/posts/posts-dynamic?ContentID=12
+      if(sitemapNode.contentID) {
+        await createServerDynamicPageItemPreviewRedirect({ sitemapNode, createRedirect, createPage, languageCode, syncClient, pageTemplate })
+      }
+
       logInfo(`${pagePath} page created.`)
       pageCount++;
     }
@@ -349,6 +420,26 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
 
 }
 
+const createClientRedirectPageForPreviewNode = ({ createPage }) => {
+    //HACK - you need to create a dummy client-only page for the redirect to work in gatsby develop...
+    //TODO - remove this logic once we have preview link generation working out of the box
+
+    //this should only happen once in a build, per dynamic page node
+    for(let node in dynamicPagePreviewRedirects) {
+
+      //need to build a collection of redirects to pass-through
+      const redirectDictByContentID = dynamicPagePreviewRedirects[node];
+    
+      createPage({
+        path: node,
+        component: path.resolve('./src/agility/components/DynamicPreviewPage.js'),
+        context: {
+          redirects: redirectDictByContentID
+        }
+      })
+    }
+      
+}
 
 const resolveLanguageCodes = (languages) => {
   return languages.map((l) => {
