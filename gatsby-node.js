@@ -265,6 +265,20 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
  */
 const createAgilityPage = async ({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
 
+
+	//create a redirect for a link node...
+	if (sitemapNode.redirect && sitemapNode.redirect.url) {
+
+		await createRedirect({
+			fromPath: pagePath,
+			toPath: sitemapNode.redirect.url,
+			isPermanent: true,
+			redirectInBrowser: true
+		});
+
+		return
+	}
+
 	//create a regular page
 	let createPageArgs = {
 		path: pagePath,
