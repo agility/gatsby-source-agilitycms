@@ -263,7 +263,7 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
  * @param {*} isHomePage
  * @returns
  */
-const createAgilityPage = async ({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
+const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
 
 
 	//create a redirect for a link node...
@@ -417,7 +417,7 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
 
 			isHomePage = false; //clear flag, homepage created...
 			pagePath = resolvePagePath(pagePath, languageCode);
-			await createAgilityPage({ createPage, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
+			await createAgilityPage({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
 
 			//if this is a dynamic page item, create a redirect for preview i.e. `~/posts/posts-dynamic?ContentID=12
 			if (sitemapNode.contentID) {
