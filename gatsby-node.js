@@ -269,9 +269,12 @@ const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemap
 	//create a redirect for a link node...
 	if (sitemapNode.redirect && sitemapNode.redirect.url) {
 
+		let redirectUrl = sitemapNode.redirect.url;
+		if (redirectUrl.indexOf("~/") == 0) redirectUrl = redirectUrl.substring(1);
+
 		await createRedirect({
 			fromPath: pagePath,
-			toPath: sitemapNode.redirect.url,
+			toPath: redirectUrl,
 			isPermanent: true,
 			redirectInBrowser: true
 		});
