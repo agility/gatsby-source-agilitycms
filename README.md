@@ -6,6 +6,9 @@ This uses the [Agility CMS Sync SDK](https://github.com/agility/agility-sync-sdk
 ## Example
 For an example on how this can be used in a website see [Agility CMS GatsbyJS Starter](https://github.com/agility/agility-gatsby-starter).
 
+## Documentation
+[Learn how to get started with Gatsby and Agility CMS](https://help.agilitycms.com/hc/en-us/articles/360037873531)
+
 ## Usage
 Install it:
 ```
