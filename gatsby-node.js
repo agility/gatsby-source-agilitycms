@@ -419,7 +419,7 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
 			}
 
 			isHomePage = false; //clear flag, homepage created...
-			pagePath = resolvePagePath(pagePath, languageCode);
+			pagePath = resolvePagePath(pagePath, language, isMultiLanguage);
 			await createAgilityPage({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
 
 			//if this is a dynamic page item, create a redirect for preview i.e. `~/posts/posts-dynamic?ContentID=12
@@ -464,7 +464,7 @@ const resolveLanguageCodes = (languages) => {
 
 const resolvePagePath = (path, language, isMultiLanguage) => {
 	if (isMultiLanguage) {
-		return `/${language.path}${path}`;
+		return `${language.path}${path}`;
 	} else {
 		return `${path}`;
 	}
