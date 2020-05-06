@@ -8,8 +8,11 @@ exports.sourceNodes = async (args, configOptions) => {
 	const { actions, createNodeId, createContentDigest, getNode, getNodes, store, cache, reporter } = args;
 	const { createNode, deleteNode, deletePage, touchNode } = actions
 
+	const languages = configOptions.languages;
 	const languageCodes = resolveLanguageCodes(configOptions.languages);
 	const channelsRefs = resolveChannelRefNames(configOptions.channels);
+
+	const isMultiLanguage = languageCodes.length > 1;
 
 	//set up our Agility CMS Sync Client
 	const syncClient = agilitySync.getSyncClient({
@@ -44,7 +47,7 @@ exports.sourceNodes = async (args, configOptions) => {
 	logInfo(`Creating sitemap nodes...`);
 
 	//TODO: Do we need to do this every time?
-	await createSitemapSourceNodes({ createNode, createNodeId, createContentDigest, channelsRefs, languageCodes, syncClient })
+	await createSitemapSourceNodes({ createNode, createNodeId, createContentDigest, channelsRefs, languages, syncClient, isMultiLanguage })
 
 	logInfo(`Source Nodes Completed.`);
 }
@@ -59,6 +62,7 @@ exports.createPages = async (args, configOptions) => {
 	const channelsRefs = resolveChannelRefNames(configOptions.channels);
 	const debug = configOptions.debug;
 	const isMultiLanguage = languages.length > 1;
+	const defaultLanguage = languages[0];
 
 	logInfo(`Create Pages Started...`);
 
@@ -90,8 +94,7 @@ exports.createPages = async (args, configOptions) => {
 		}
 	});
 
-
-	await createPagesInEachLanguage({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage })
+	await createPagesInEachLanguage({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage, defaultLanguage })
 
 	//HACK: create a dummy page for `gatsby develop` redirects on the client-side for dynamic preview urls
 	await createClientRedirectPageForPreviewNode({ createPage });
@@ -192,12 +195,13 @@ exports.createResolvers = (args) => {
 	createResolvers(resolvers)
 }
 
-const createSitemapSourceNodes = async ({ createNode, createNodeId, createContentDigest, channelsRefs, languageCodes, syncClient }) => {
+const createSitemapSourceNodes = async ({ createNode, createNodeId, createContentDigest, channelsRefs, languages, syncClient, isMultiLanguage }) => {
 
 	//only support one channel for now (first channel)
 	let channelName = channelsRefs[0];
 
-	await asyncForEach(languageCodes, async (languageCode) => {
+	await asyncForEach(languages, async (lang) => {
+		const languageCode = lang.code;
 
 		//get the sitemap from the local store
 		let sitemap = await syncClient.store.getSitemap({ channelName, languageCode });
@@ -211,6 +215,9 @@ const createSitemapSourceNodes = async ({ createNode, createNodeId, createConten
 
 			const sitemapNode = sitemap[pagePath];
 
+			sitemapNode.path = resolvePagePath(pagePath, lang, isMultiLanguage);
+			sitemapNode.pagePath = resolvePagePath(pagePath, lang, isMultiLanguage);
+
 			const nodeID = createNodeId(`sitemap-${sitemapNode.pageID}-${sitemapNode.contentID}`);
 
 			const nodeMeta = {
@@ -218,7 +225,7 @@ const createSitemapSourceNodes = async ({ createNode, createNodeId, createConten
 				parent: null,
 				children: [],
 				languageCode: languageCode,
-				pagePath: pagePath,
+				pagePath: sitemapNode.pagePath,
 				internal: {
 					type: "agilitySitemapNode",
 					content: "",
@@ -263,7 +270,7 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
  * @param {*} isHomePage
  * @returns
  */
-const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug }) => {
+const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug, isMultiLanguage }) => {
 
 
 	//create a redirect for a link node...
@@ -291,7 +298,8 @@ const createAgilityPage = async ({ createPage, createRedirect, pagePath, sitemap
 			contentID: sitemapNode.contentID || -1,
 			languageCode: languageCode,
 			title: sitemapNode.title,
-			isPreview: isPreview
+			isPreview: isPreview,
+			isMultiLanguage: isMultiLanguage
 		}
 	}
 
@@ -310,9 +318,8 @@ let dynamicPageNodes = {};
 //i.e. `{ '/posts/posts-dynamic': { '15':'/posts/some-postitle', '16':'/posts/someother-post'  } }`
 let dynamicPagePreviewRedirects = {};
 
-const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapNode, createRedirect, languageCode, syncClient }) => {
-
-	//TODO: Make this work with mult-language sites
+const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapNode, createRedirect, language, syncClient, isMultiLanguage, debug }) => {
+	
 	let page = null;
 
 	//if we don't have this dynamic page node yet, get it, and create a dummy page for it (to handle client-side redirects)
@@ -321,7 +328,7 @@ const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapN
 		//get the dynamic page node so we can figure out what the dynamic page's name is
 		page = await syncClient.store.getPage({
 			pageID: sitemapNode.pageID,
-			languageCode: languageCode
+			languageCode: language.code
 		});
 
 		//save this for later
@@ -346,23 +353,28 @@ const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapN
 	const dynamicPageNodePath = `${parentPath}/${dynamicNodeSlug}`;
 
 	//build the preview url -> i.e. `/posts/posts-dynamic?ContentID=12`
-	const previewUrl = `${dynamicPageNodePath}?ContentID=${sitemapNode.contentID}`;
+	const previewUrl = `${dynamicPageNodePath}?ContentID=${sitemapNode.contentID}&lang=${language.code}`;
 
-	//redirect `/posts/posts-dynamic?ContentID` -> `/posts/some-post-title`
+	//redirect `/posts/posts-dynamic?ContentID` -> `/posts/some-post-title` or `/en/posts/some-post-title` (if multi-lang)
+	const toPath = resolvePagePath(pagePath, language, isMultiLanguage);
+
 	await createRedirect({
 		fromPath: previewUrl,
-		toPath: pagePath,
+		toPath: toPath,
 		isPermanent: false,
 		force: true //for netlify
 	});
 
+	if(debug) {
+		logDebug(`Preview redirect for ${previewUrl} to ${toPath} created`);
+	}
 
 	//HACK: save a list of all our preview redirects so we can create a dummy client-side page to handle each one in `gatsby develop`
 	if (!dynamicPagePreviewRedirects[dynamicPageNodePath]) {
 		dynamicPagePreviewRedirects[dynamicPageNodePath] = {};
 	}
 	//i.e. `{ '/posts/posts-dynamic': { '15':'/posts/some-postitle', '16':'/posts/someother-post'  } }`
-	dynamicPagePreviewRedirects[dynamicPageNodePath][sitemapNode.contentID] = pagePath;
+	dynamicPagePreviewRedirects[dynamicPageNodePath][sitemapNode.contentID] = toPath;
 }
 
 
@@ -372,17 +384,20 @@ const resolveChannelRefNames = (channels) => {
 	})
 }
 
-const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage }) => {
+const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, createPage, createRedirect, pageTemplate, isPreview, debug, isMultiLanguage, defaultLanguage }) => {
 
 	//TODO: handle mulitple channels, just use the first one for now
 	let channelName = channelsRefs[0];
 
-	//set flag for default homepage '/' - it will be the first sitemap node in the first language
-	let isHomePage = true;
+	//flag for keeping track of whether we've created a redirect from '/' to our default language
+	let mulitLangDefaultRedirectCreated = false;
 
 	//loop through each language
 	await asyncForEach(languages, async (language) => {
 
+		//flag for processing the first page in the sitemap for each language
+		let isHomePage = true;
+		
 		const languageCode = language.code;
 
 		//get the sitemap
@@ -402,29 +417,50 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
 			//skip folders
 			if (sitemapNode.isFolder) continue;
 
+			//this is the first page in the sitemap
 			if (isHomePage) {
-				//create a redirect from sitemapNode.path to /
+				//create a redirect from the first page in the sitemap (i.e. '/home') to the root page of the site ('/' or '/en/' if multi-lang)
 				const fromPath = resolvePagePath(sitemapNode.path, language, isMultiLanguage);
+				const toPath = resolvePagePath('/', language, isMultiLanguage)
 				await createRedirect({
 					fromPath: fromPath,
-					toPath: "/",
+					toPath: toPath,
 					isPermanent: true,
 					redirectInBrowser: true
 				});
 
-				//also need to create the actual '/' root page - if you don't you'll get a 404 on page-data.json requests to '/home'
-				await createAgilityPage({ createPage, pagePath: '/', sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
+				//also need to create the actual '/' or '/en/' root page - if you don't you'll get a 404 on page-data.json requests to '/home'
+				await createAgilityPage({ createPage, pagePath: toPath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug, isMultiLanguage });
 
-				logInfo(`Requests to ${fromPath} will redirect to '/'`)
+				logInfo(`Homepage requests to ${fromPath} will redirect to '${toPath}'`)
+
+				//if this is a multi-lang site, also need to setup a redirect from the '/' page to the default language (i.e. '/en/)
+				if(isMultiLanguage && !mulitLangDefaultRedirectCreated) {
+					const defaultLanguageToPath = resolvePagePath('/', defaultLanguage, true);
+					await createRedirect({
+						fromPath: '/',
+						toPath: resolvePagePath('/', defaultLanguage, true),
+						isPermanent: true,
+						redirectInBrowser: true
+					});
+
+					//also need to create the actual '/' root page - if you don't you'll get a 404 on page-data.json requests to '/'
+					await createAgilityPage({ createPage, pagePath: '/', sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug, isMultiLanguage });
+
+					logInfo(`Root requests to '/' will redirect to the default language path '${defaultLanguageToPath}'`)
+
+					//flip the flag so we don't reprocess this in other lanaguages
+					mulitLangDefaultRedirectCreated = true;
+				}
 			}
 
 			isHomePage = false; //clear flag, homepage created...
 			pagePath = resolvePagePath(pagePath, language, isMultiLanguage);
-			await createAgilityPage({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug });
+			await createAgilityPage({ createPage, createRedirect, pagePath, sitemapNode, isHomePage, pageTemplate, languageCode, isPreview, debug, isMultiLanguage });
 
 			//if this is a dynamic page item, create a redirect for preview i.e. `~/posts/posts-dynamic?ContentID=12
 			if (sitemapNode.contentID) {
-				await createServerDynamicPageItemPreviewRedirect({ sitemapNode, createRedirect, createPage, languageCode, syncClient, pageTemplate })
+				await createServerDynamicPageItemPreviewRedirect({ sitemapNode, createRedirect, createPage, language, syncClient, pageTemplate, isMultiLanguage, debug })
 			}
 
 			pageCount++;
@@ -464,7 +500,7 @@ const resolveLanguageCodes = (languages) => {
 
 const resolvePagePath = (path, language, isMultiLanguage) => {
 	if (isMultiLanguage) {
-		return `${language.path}${path}`;
+		return `/${language.path}${path}`;
 	} else {
 		return `${path}`;
 	}
