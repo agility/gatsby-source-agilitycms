@@ -33,6 +33,9 @@ const saveItem = async ({ options, item, itemType, languageCode, itemID }) => {
 		case "sitemap": {
 			break;
 		}
+		case "urlredirections":{
+			break;
+		}
 		case "nestedsitemap": {
 			//we can't store an array...
 			item = { nodes: item };
