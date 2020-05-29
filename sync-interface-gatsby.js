@@ -27,6 +27,9 @@ const saveItem = async ({ options, item, itemType, languageCode, itemID }) => {
 			nodeObj.pageJson = "";
 			break;
 		}
+		case "urlredirections":{
+			break;
+		}
 		case "state": {
 			break;
 		}

@@ -96,6 +96,8 @@ exports.createPages = async (args, configOptions) => {
 	//HACK: create a dummy page for `gatsby develop` redirects on the client-side for dynamic preview urls
 	await createClientRedirectPageForPreviewNode({ createPage });
 
+	await createRedirects({syncClient, createRedirect, languages});
+
 }
 
 //CREATE RESOLVERS *******************************************************************************************
@@ -337,7 +339,19 @@ const createServerDynamicPageItemPreviewRedirect = async ({ createPage, sitemapN
 	const pagePath = sitemapNode.path;
 
 	//strip the dynamic formula path -> `/posts`
-	const parentPath = pagePath.substring(0, pagePath.lastIndexOf('/'));
+	let parentPath = pagePath.substring(0, pagePath.lastIndexOf('/'));
+
+	const pagePathFormula = page.dynamic.pageNameFormula;
+	//if the formular has / in it (ie: post/category/post-title) pull off the extra slashes
+
+	let slashIndex = pagePathFormula.indexOf("/");
+	while (slashIndex !== -1 && parentPath.indexOf("/") !== -1) {
+		//loop until we've trimmed out the extra slashes...
+		slashIndex = pagePathFormula.indexOf("/", slashIndex + 1);
+		parentPath = parentPath.substring(0, parentPath.lastIndexOf('/'));
+
+	}
+
 
 	//i.e. `posts-dynamic`
 	const dynamicNodeSlug = page.name;
@@ -432,6 +446,34 @@ const createPagesInEachLanguage = async ({ syncClient, languages, channelsRefs, 
 
 		logSuccess(`${pageCount} pages created from ${channelName} in ${languageCode}`)
 	})
+
+}
+
+const createRedirects = async ({syncClient, createRedirect, languages}) => {
+
+	const languageCode = languages[0].code;
+
+	const redirects = await syncClient.store.getUrlRedirections({ languageCode });
+
+	if (! redirects || ! redirects.items) return;
+
+	await asyncForEach(redirects.items, async (redirect) => {
+
+		let originUrl = redirect.originUrl;
+		let destUrl = redirect.destinationUrl;
+		if (originUrl.indexOf("~/") == 0) originUrl = originUrl.substring(1);
+		if (destUrl.indexOf("~/") == 0) destUrl = destUrl.substring(1);
+
+		const gatsbyRedirect = {
+			fromPath: originUrl,
+			toPath: destUrl,
+			isPermanent: redirect.statusCode === 301,
+			redirectInBrowser: true
+		};
+
+		await createRedirect(gatsbyRedirect);
+
+	});
 
 }
 
