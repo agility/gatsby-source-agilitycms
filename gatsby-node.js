@@ -14,6 +14,18 @@ exports.sourceNodes = async (args, configOptions) => {
 
 	const isMultiLanguage = languageCodes.length > 1;
 
+
+
+	if (configOptions.guid === undefined
+		|| configOptions.guid === null
+		|| configOptions.guid === "") {
+
+		logWarning(`You haven't setup your GUID and API Key Environment Variables yet.`);
+		logWarning("You may want to check out this link from the Agility Docs: https://help.agilitycms.com/hc/en-us/articles/360039879872")
+		return;
+
+		}
+
 	//set up our Agility CMS Sync Client
 	const syncClient = agilitySync.getSyncClient({
 		guid: configOptions.guid,
@@ -72,6 +84,15 @@ exports.createPages = async (args, configOptions) => {
 	if (configOptions.masterPageTemplate) {
 		pageTemplate = path.resolve(configOptions.masterPageTemplate);
 	}
+
+	if (configOptions.guid === undefined
+		|| configOptions.guid === null
+		|| configOptions.guid === "") {
+		//We already gave the user warning up top, just don't proceed if we don't have a guid
+
+		return ;
+
+		}
 
 	//set up our Agility CMS Sync Client
 	const syncClient = agilitySync.getSyncClient({
