@@ -1,6 +1,6 @@
 {
 	"name": "@agility/gatsby-source-agilitycms",
-	"version": "1.6.0",
+	"version": "1.6.1",
 	"description": "Gatsby Source Plugin for Agility CMS",
 	"keywords": [
 		"gatsby",
@@ -19,6 +19,6 @@
 		"url": "https://github.com/gatsbyjs/gatsby-source-agilitycms"
 	},
 	"dependencies": {
-		"@agility/content-sync": "^0.1.10"
+		"@agility/content-sync": "^0.1.12"
 	}
 }
