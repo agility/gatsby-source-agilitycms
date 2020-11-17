@@ -19,6 +19,6 @@
 		"url": "https://github.com/gatsbyjs/gatsby-source-agilitycms"
 	},
 	"dependencies": {
-		"@agility/content-sync": "^0.1.13"
+		"@agility/content-sync": "^0.1.14"
 	}
 }
