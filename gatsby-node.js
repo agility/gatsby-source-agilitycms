@@ -320,11 +320,16 @@ const createSitemapSourceNodes = async ({
     for (const pagePath in sitemap) {
       const sitemapNode = sitemap[pagePath];
 
+      // if no contentID, set to -1
+      if (sitemapNode.contentID == null) {
+        sitemapNode.contentID = -1;
+      }
+
       sitemapNode.path = resolvePagePath(pagePath, lang, isMultiLanguage);
       sitemapNode.pagePath = resolvePagePath(pagePath, lang, isMultiLanguage);
 
       const nodeID = createNodeId(
-        `sitemap-${sitemapNode.pageID}-${sitemapNode.contentID}`
+        `sitemap-${sitemapNode.pageID}-${languageCode}-${sitemapNode.contentID}`
       );
 
       const nodeMeta = {
@@ -376,6 +381,7 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
  * @returns
  */
 const createAgilityPage = async ({
+  languages,
   createPage,
   createRedirect,
   pagePath,
@@ -413,6 +419,7 @@ const createAgilityPage = async ({
       title: sitemapNode.title,
       isPreview: isPreview,
       isMultiLanguage: isMultiLanguage,
+      languages: languages,
     },
   };
 
@@ -612,6 +619,7 @@ const createPagesInEachLanguage = async ({
           isPreview,
           debug,
           isMultiLanguage,
+          languages,
         });
 
         logInfo(
@@ -625,6 +633,7 @@ const createPagesInEachLanguage = async ({
             defaultLanguage,
             true
           );
+
           await createRedirect({
             fromPath: "/",
             toPath: resolvePagePath("/", defaultLanguage, true),
@@ -643,6 +652,7 @@ const createPagesInEachLanguage = async ({
             isPreview,
             debug,
             isMultiLanguage,
+            languages,
           });
 
           logInfo(
@@ -667,6 +677,7 @@ const createPagesInEachLanguage = async ({
         isPreview,
         debug,
         isMultiLanguage,
+        languages,
       });
 
       //if this is a dynamic page item, create a redirect for preview i.e. `~/posts/posts-dynamic?ContentID=12
