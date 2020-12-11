@@ -451,10 +451,15 @@ const createServerDynamicPageItemPreviewRedirect = async ({
   //if we don't have this dynamic page node yet, get it, and create a dummy page for it (to handle client-side redirects)
   if (!dynamicPageNodes[sitemapNode.pageID]) {
     //get the dynamic page node so we can figure out what the dynamic page's name is
+
     page = await syncClient.store.getPage({
       pageID: sitemapNode.pageID,
       languageCode: language.code,
     });
+
+    if (page == null) {
+      return;
+    }
 
     //save this for later
     dynamicPageNodes[sitemapNode.pageID] = page;
