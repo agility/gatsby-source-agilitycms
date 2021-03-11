@@ -74,7 +74,7 @@ const deleteItem = async ({ options, itemType, languageCode, itemID }) => {
 	const node = options.getNode(nodeID);
 
 	if (node) {
-		options.deleteNode({ node: node });
+		options.deleteNode(node);
 	}
 }
 

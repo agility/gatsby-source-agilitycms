@@ -1,4 +1,5 @@
 let path = require("path");
+
 let {
   logDebug,
   logInfo,
@@ -289,6 +290,30 @@ exports.createResolvers = (args) => {
   createResolvers(resolvers);
 };
 
+//SETUP WEBPACK CONFIG
+exports.onCreateWebpackConfig = ({ actions }) => {
+
+	actions.setWebpackConfig({
+      resolve: {
+         fallback: {
+           fs: false,
+		   path: false,
+		   zlib: false,
+		   tty: false,
+		   constants: false,
+		   events: false,
+		   url: false,
+		   assert: false,
+		   stream: false,
+		   http: false,
+		   https: false,
+		   os: false,
+
+         }
+      }
+	})
+  }
+
 const createSitemapSourceNodes = async ({
   createNode,
   createNodeId,
@@ -365,7 +390,7 @@ const touchAllNodes = async ({ getNodes, touchNode }) => {
       nodeType.indexOf("agility") != -1 &&
       nodeType.indexOf("agilitySitemapNode") === -1
     ) {
-      await touchNode({ nodeId: node.id });
+      await touchNode(node);
       count++;
     }
   });
