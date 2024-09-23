@@ -246,26 +246,31 @@ exports.createResolvers = (args) => {
       pageJson: {
         resolve: async (source, args, context, info) => {
           const languageCode = source.languageCode;
+          try {
+            const pageJSON = source.internal.content;
+            const pageItem = JSON.parse(pageJSON);
+            let depth = 3;
+            if (pageItem.zones) {
+              for (const zoneName in pageItem.zones) {
+                const zone = pageItem.zones[zoneName];
 
-          const pageJSON = source.internal.content;
-          const pageItem = JSON.parse(pageJSON);
-          let depth = 3;
-
-          for (const zoneName in pageItem.zones) {
-            const zone = pageItem.zones[zoneName];
-
-            for (const mod of zone) {
-              const moduleItem = await getContentItem({
-                contentID: mod.item.contentid,
-                languageCode,
-                context,
-                depth: depth - 1,
-              });
-              mod.item = moduleItem;
+                for (const mod of zone) {
+                  const moduleItem = await getContentItem({
+                    contentID: mod.item.contentid,
+                    languageCode,
+                    context,
+                    depth: depth - 1,
+                  });
+                  mod.item = moduleItem;
+                }
+              }
             }
-          }
 
-          return JSON.stringify(pageItem);
+            return JSON.stringify(pageItem);
+          } catch (error) {
+            console.error("Error resolving page:", source, error);
+            return null;
+          }
         },
       },
     },
@@ -293,26 +298,26 @@ exports.createResolvers = (args) => {
 //SETUP WEBPACK CONFIG
 exports.onCreateWebpackConfig = ({ actions }) => {
 
-	actions.setWebpackConfig({
-      resolve: {
-         fallback: {
-           fs: false,
-		   path: false,
-		   zlib: false,
-		   tty: false,
-		   constants: false,
-		   events: false,
-		   url: false,
-		   assert: false,
-		   stream: false,
-		   http: false,
-		   https: false,
-		   os: false,
+  actions.setWebpackConfig({
+    resolve: {
+      fallback: {
+        fs: false,
+        path: false,
+        zlib: false,
+        tty: false,
+        constants: false,
+        events: false,
+        url: false,
+        assert: false,
+        stream: false,
+        http: false,
+        https: false,
+        os: false,
 
-         }
       }
-	})
-  }
+    }
+  })
+}
 
 const createSitemapSourceNodes = async ({
   createNode,
