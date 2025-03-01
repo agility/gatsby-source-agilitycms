@@ -1,6 +1,6 @@
 {
   "name": "@agility/gatsby-source-agilitycms",
-  "version": "3.0.8",
+  "version": "3.0.9",
   "description": "Gatsby Source Plugin for Agility CMS",
   "keywords": [
     "gatsby",
@@ -28,6 +28,6 @@
     "@agility/content-sync": "^0.1.24"
   },
   "peerDependencies": {
-    "gatsby": "^3.0"
+    "gatsby": "^3.0 || ^4.0 || ^5.0"
   }
 }
